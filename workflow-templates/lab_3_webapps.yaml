@@ -1,0 +1,55 @@
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'lab_3/**'
+
+name: Lab_3_WebApp
+env:
+  AZURE_WEBAPP_NAME: azure-webapp-unique-name
+  AZURE_WEBAPP_PACKAGE_PATH: ./lab_3/app
+
+jobs:
+  deploy-to-azure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Node 12.14.0
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12.4.0"
+
+      - name: npm install
+        run: |
+          cd ${AZURE_WEBAPP_PACKAGE_PATH}
+          npm install
+
+      - name: npm test
+        run: |
+          cd ${AZURE_WEBAPP_PACKAGE_PATH}
+          npm test
+
+      - name: test pass message
+        if: success()
+        run: |
+          echo "npm tests passed! ready to deploy"
+
+      - name: test fail message
+        if: failure()
+        run: |
+          echo "npm tests failed! please check your code"
+
+      - name: Deploy to Azure WebApp
+        uses: azure/webapps-deploy@v2
+        if: success()
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
